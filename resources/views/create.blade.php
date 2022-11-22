@@ -4,11 +4,14 @@
     <div class="card">
         <div class="card-header">新規メモ作成</div>
         <!-- route('store') と書くと→　/store　と書き換えてくれる -->
-        <form class="card-body" action="{{ route('store') }}" method="POST">
+        <form class="card-body my-card-body" action="{{ route('store') }}" method="POST">
             @csrf
             <div class="form-group" >
-                <textarea class="form-control" name="content" rows="3" placeholder="ここにメモを入力"></textarea>
-            </div>
+                <textarea class="form-control mb-3" name="content" rows="3" placeholder="ここにメモを入力"></textarea>
+            
+        @error('content')
+            <div class="alert alert-danger">メモ内容を入力してください!</div>
+        @enderror</div>
         @foreach($tags as $t)
             <div class="form-check form-check-inline mb-3">
             <!-- name=tagsの後に[]をつけることによって配列になる -->

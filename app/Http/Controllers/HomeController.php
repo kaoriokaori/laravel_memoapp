@@ -28,21 +28,17 @@ class HomeController extends Controller
     public function index()
     {
         // ここでメモを取得
-        $memos = Memo::select('memos.*')
-            ->where('user_id', '=', \Auth::id() )
-            ->whereNull('deleted_at')
-            ->orderBy('updated_at', 'DESC') // ASC＝小さい順, DESC=大きい順（新しい順）
-            ->get();
 
         $tags = Tag::where('user_id', '=', \Auth::id())->whereNull('deleted_at')->orderBy('id', 'DESC')
         ->get();
 
-        return view('create', compact('memos', 'tags') );
+        return view('create', compact('tags') );
     }
 
     public function store(Request $request)
     {
         $posts = $request->all();
+        $request->validate(['content' => 'required']);
                 // ＝＝＝＝＝ここからトランザクション開始＝＝＝＝＝＝
         DB::transaction(function() use($posts) {
             // 新規IDをインサートして取得
@@ -73,13 +69,6 @@ class HomeController extends Controller
 
     public function edit($id)
     {
-    // ここでメモを取得
-    $memos = Memo::select('memos.*')
-        ->where('user_id', '=', \Auth::id() )
-        ->whereNull('deleted_at')
-        ->orderBy('updated_at', 'DESC') // ASC＝小さい順, DESC=大きい順（新しい順）
-        ->get();
-
         $edit_memo = Memo::select('memos.*', 'tags.id AS tag_id')
             ->leftJoin('memo_tags', 'memo_tags.memo_id', '=', 'memos.id')
             ->leftJoin('tags', 'memo_tags.tag_id', '=', 'tags.id')
@@ -95,15 +84,17 @@ class HomeController extends Controller
         $tags = Tag::where('user_id', '=', \Auth::id())->whereNull('deleted_at')->orderBy('id', 'DESC')
         ->get();
 
-    return view('edit', compact('memos', 'edit_memo', 'include_tags', 'tags') );
+    return view('edit', compact('edit_memo', 'include_tags', 'tags') );
 }
 
 public function update(Request $request)
 {
-    dd($request);
     $posts = $request->all();
+    $request->validate(['content' => 'required']);
+
         // トランザクションスタート
     DB::transaction(function () use($posts){
+        // メモの内容を更新
         Memo::where('id', $posts['memo_id'])->update([ 'content' => $posts['content']]);
         // 一旦メモとタグの紐付けを削除
         MemoTag::where('memo_id', '=', $posts['memo_id'])->delete();
@@ -120,7 +111,7 @@ public function update(Request $request)
             // 新規タグが既に存在しなければ、tagsテーブルにインサートIDを取得
             $tag_id = Tag::insertGetId(['user_id' => \Auth::id(), 'name' => $posts['new_tag']]);
             // memo_tagにインサートして、メモタグと紐付ける
-            MemoTag::insert(['memo_id' => $posts['$memo_id'], 'tag_id' => $tag_id]);
+            MemoTag::insert(['memo_id' => $posts['memo_id'], 'tag_id' => $tag_id]);
         }
     });
     // トランザクションここまで
